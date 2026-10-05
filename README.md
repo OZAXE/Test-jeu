@@ -65,3 +65,9 @@ Le flux est toujours le même : **entrées → intention → simulation (état) 
 `state/`, `systems/`, `world/heightmap.js`, `world/noise.js` et `world/world.js` fonctionnent sans navigateur : ils pourront tourner tels quels sur un serveur Node pour le multijoueur. Le monde est généré à partir d'une graine (`CONFIG.seed`), il est donc identique pour tous les joueurs.
 
 Dans la console du navigateur, `window.__game` donne accès à l'état du joueur et au monde pour déboguer.
+
+## Tests et contrôle des PR
+
+`npm test` lance les tests de la simulation dans Node (rester sur l'île, collisions avec les arbres, saut). Ils tournent en quelques secondes, sans navigateur.
+
+Chaque Pull Request vers `main` déclenche le workflow `.github/workflows/ci.yml` (tests + build). Une PR n'est fusionnée que si ce contrôle est vert ; la fusion déclenche ensuite le déploiement.
