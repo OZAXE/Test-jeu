@@ -59,3 +59,40 @@ export function findOccluders(props, cameraPos, targets, previous = new Set(), m
   }
   return result;
 }
+
+// ---------- Relief ----------
+
+// Distance maximale à laquelle la caméra peut se placer depuis le point visé "from",
+// dans la direction unitaire "dir", sans qu'une colline ne coupe la vue.
+// On avance par petits pas le long du rayon : dès que le sol (+ marge) dépasse le rayon,
+// on s'arrête juste avant. Une vingtaine d'appels à getHeight par image : négligeable.
+export function terrainClearDistance(getHeight, from, dir, maxDist, clearance = 0.35, step = 0.25) {
+  for (let d = step; d <= maxDist; d += step) {
+    const x = from.x + dir.x * d;
+    const y = from.y + dir.y * d;
+    const z = from.z + dir.z * d;
+    if (getHeight(x, z) + clearance > y) {
+      return Math.max(0, d - step);
+    }
+  }
+  return maxDist;
+}
+
+// Cherche l'angle vertical le plus proche de "pitch" (en montant) pour lequel la caméra,
+// placée à "distance" du point visé, voit le joueur sans colline entre les deux.
+// Idée : plutôt que de coller la caméra au joueur, on la fait passer au-dessus de la colline.
+// Si même la vue la plus plongeante ne suffit pas, on renvoie la distance réduite.
+export function findClearView(getHeight, from, yaw, pitch, maxPitch, distance, pitchStep = 0.05) {
+  const dir = { x: 0, y: 0, z: 0 };
+  const at = (p) => {
+    const cp = Math.cos(p);
+    dir.x = Math.sin(yaw) * cp;
+    dir.y = Math.sin(p);
+    dir.z = Math.cos(yaw) * cp;
+    return terrainClearDistance(getHeight, from, dir, distance);
+  };
+  for (let p = pitch; p < maxPitch + 1e-6; p += pitchStep) {
+    if (at(p) >= distance - 1e-6) return { pitch: p, distance };
+  }
+  return { pitch: maxPitch, distance: at(maxPitch) };
+}
