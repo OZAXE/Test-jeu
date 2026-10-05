@@ -98,8 +98,14 @@ export function createPropMeshes(props, seed) {
   const group = new THREE.Group();
   group.name = 'props';
 
-  const trees = props.filter((p) => p.type === 'tree');
-  const rocks = props.filter((p) => p.type === 'rock');
+  // Pour chaque prop : son type et son numéro d'instance dans le mesh correspondant
+  const trees = [];
+  const rocks = [];
+  const slots = props.map((p) => {
+    const list = p.type === 'tree' ? trees : rocks;
+    list.push(p);
+    return list.length - 1;
+  });
 
   const { trunk, foliage } = createTreeGeometries();
   const trunkMesh = new THREE.InstancedMesh(
@@ -149,12 +155,83 @@ export function createPropMeshes(props, seed) {
     rockMesh.setColorAt(i, color);
   });
 
-  for (const mesh of [trunkMesh, foliageMesh, rockMesh]) {
+  const solidMeshes = [trunkMesh, foliageMesh, rockMesh];
+  for (const mesh of solidMeshes) {
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     mesh.computeBoundingSphere();
     group.add(mesh);
   }
 
-  return group;
+  // ---------- Version "fantôme" des props qui cachent le joueur ----------
+  // Mêmes géométries, matériau semi-transparent. Un prop gênant est retiré du mesh
+  // normal (échelle 0) et dessiné ici à la place.
+  const ghostMaterial = (color) =>
+    new THREE.MeshLambertMaterial({
+      color,
+      flatShading: true,
+      transparent: true,
+      opacity: 0.28,
+      depthWrite: false,
+    });
+  const ghostOf = (mesh, color) => {
+    const g = new THREE.InstancedMesh(mesh.geometry, ghostMaterial(color), mesh.count);
+    // Couleurs d'instance créées d'emblée : le shader est compilé une seule fois
+    if (mesh.instanceColor) g.setColorAt(0, new THREE.Color(1, 1, 1));
+    g.count = 0;
+    g.frustumCulled = false; // la liste change sans arrêt, inutile de recalculer la sphère englobante
+    g.renderOrder = 1; // dessiné après les objets opaques
+    group.add(g);
+    return g;
+  };
+  const ghosts = [
+    ghostOf(trunkMesh, 0x7a5434),
+    ghostOf(foliageMesh, 0xffffff),
+    ghostOf(rockMesh, 0xffffff),
+  ];
+
+  // Matrices d'origine, pour pouvoir réafficher un prop
+  const original = solidMeshes.map((mesh) =>
+    Array.from({ length: mesh.count }, (_, i) => {
+      const mat = new THREE.Matrix4();
+      mesh.getMatrixAt(i, mat);
+      return mat;
+    }),
+  );
+  const hiddenMatrix = new THREE.Matrix4().makeScale(0, 0, 0);
+  let hidden = new Set();
+
+  // Met à jour la liste des props en transparence (indices dans "props")
+  function setGhosted(indices) {
+    // Rien à faire si la liste n'a pas changé (cas le plus fréquent)
+    if (indices.size === hidden.size && [...indices].every((i) => hidden.has(i))) return;
+
+    for (const i of hidden) {
+      if (indices.has(i)) continue;
+      const k = props[i].type === 'tree' ? [0, 1] : [2];
+      for (const m of k) solidMeshes[m].setMatrixAt(slots[i], original[m][slots[i]]);
+    }
+    for (const g of ghosts) g.count = 0;
+    for (const i of indices) {
+      const k = props[i].type === 'tree' ? [0, 1] : [2];
+      for (const m of k) {
+        const slot = slots[i];
+        solidMeshes[m].setMatrixAt(slot, hiddenMatrix);
+        const g = ghosts[m];
+        g.setMatrixAt(g.count, original[m][slot]);
+        if (solidMeshes[m].instanceColor) {
+          solidMeshes[m].getColorAt(slot, color);
+          g.setColorAt(g.count, color);
+        }
+        g.count++;
+      }
+    }
+    for (const mesh of [...solidMeshes, ...ghosts]) {
+      mesh.instanceMatrix.needsUpdate = true;
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    }
+    hidden = new Set(indices);
+  }
+
+  return { group, setGhosted };
 }
