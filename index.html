@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- viewport-fit=cover : utilise tout l'écran (encoches) ; user-scalable=no : pas de zoom parasite -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#87b5d9" />
+    <!-- Mode "application" quand le jeu est ajouté à l'écran d'accueil -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>Île, exploration 3D</title>
+    
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="scene"></canvas>
+
+      <!-- Interface superposée au canvas -->
+      <div id="hud">
+        <div id="fps"></div>
+        <div id="hint"></div>
+      </div>
+
+      <!-- Contrôles tactiles (affichés uniquement sur mobile) -->
+      <div id="touch-ui" hidden>
+        <div id="joystick-zone"></div>
+        <div id="look-zone"></div>
+        <div id="joystick-base"><div id="joystick-knob"></div></div>
+        <button id="btn-jump" class="touch-btn" type="button">Saut</button>
+        <button id="btn-sprint" class="touch-btn" type="button">Sprint</button>
+      </div>
+
+      <!-- Écran de démarrage -->
+      <div id="start-screen">
+        <h1>Île</h1>
+        <p id="start-text">Chargement…</p>
+      </div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
