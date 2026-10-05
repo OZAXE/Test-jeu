@@ -10,7 +10,7 @@ export const CONFIG = {
     islandRadius: 58, // rayon approximatif de l'île
     maxHeight: 9, // hauteur max des collines
     seaLevel: 0, // altitude de l'eau
-    shoreMargin: 0.15, // le joueur ne peut pas aller où le sol est sous seaLevel + marge
+    shoreMargin: 0.3, // le joueur ne peut pas aller où le sol est sous seaLevel + marge
     treeCount: 70,
     rockCount: 40,
   },
